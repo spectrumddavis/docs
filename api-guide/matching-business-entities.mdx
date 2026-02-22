@@ -1,0 +1,424 @@
+---
+title: "Matching business entities"
+description: "Match suppliers, customers, business units, and addresses against master data"
+---
+
+## Introduction
+
+Entity matching compares an incoming record (e.g., a supplier from an invoice) against your master data in Spectrum Suite to find the most likely match. The system uses a two-stage process: candidate shortlisting (fast, using key identifiers) and then scoring (detailed comparison).
+
+All entity matching follows the same pattern: send the entity with optional matching configuration, receive back a ranked list of potential matches with confidence scores.
+
+---
+
+## Supported entities
+
+- **Suppliers** - Match incoming supplier records against your supplier master list
+- **Customers** - Match customer records for billing and reconciliation
+- **Business Units** - Match business entity divisions or legal entities
+- **Addresses** - Match delivery, billing, or facility addresses
+
+---
+
+## How entity matching works
+
+### Stage 1: Candidate shortlisting
+
+Before detailed scoring, the system narrows down candidates using exact matches on key identifiers. This happens automatically in priority order:
+
+**For Business Entities (Suppliers, Customers, Business Units):**
+1. IBAN match
+2. VAT registration number match
+3. Bank account number + sort code match
+4. Company registration number match
+5. Postcode match
+6. Email domain match
+7. Name prefix match (fallback)
+
+**For Addresses:**
+1. Postcode match
+2. Name match
+3. Street name match
+4. City + prefix match
+5. County + prefix match
+
+If candidates are found at any stage, the system stops and moves to scoring. This ensures the most distinctive identifiers take priority.
+
+### Stage 2: Scoring
+
+Once candidates are shortlisted, each is compared to your incoming data using fuzzy matching (where enabled) with configurable field weights. The result is a confidence score (0–1).
+
+---
+
+## Request structure
+
+All entity match requests follow the same pattern:
+
+**Suppliers:**
+```json
+POST /api/suppliers/match
+
+{
+  "supplier": {
+    "businessUnitId": 1,
+    "name": "Smith Manufacturing Ltd",
+    "companyNumber": "12345678",
+    "postcode": "M1 2AB"
+  },
+  "options": {
+    "matchMethod": "All",
+    "minimumConfidenceScore": 0.65
+  }
+}
+```
+
+**Customers:**
+```json
+POST /api/customers/match
+
+{
+  "customer": {
+    "businessUnitId": 1,
+    "name": "ACME Corporation",
+    "postcode": "B5 7QA"
+  },
+  "options": {
+    "matchMethod": "Best"
+  }
+}
+```
+
+**Business Units:**
+```json
+POST /api/business-units/match
+
+{
+  "businessUnit": {
+    "name": "Our Main Office Ltd",
+    "companyNumber": "10987654",
+    "postcode": "EC1A 1BB"
+  }
+}
+```
+
+**Addresses:**
+```json
+POST /api/addresses/match
+
+{
+  "address": {
+    "businessUnitId": 1,
+    "name": "Warehouse",
+    "addressLine1": "456 Industrial Estate",
+    "postcode": "LS10 1AB",
+    "city": "Leeds",
+    "type": "Billing"
+  }
+}
+```
+
+---
+
+## Example: supplier matching
+
+**Request:**
+
+```bash
+curl -X POST "https://spectrumsuite.azurewebsites.net/api/suppliers/match" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "supplier": {
+      "businessUnitId": 1,
+      "name": "Smith Manufacturing Ltd",
+      "companyNumber": "12345678",
+      "vatRegistrationNumber": "GB123456789",
+      "addressLine1": "123 Industrial Road",
+      "postcode": "M1 2AB",
+      "city": "Manchester",
+      "bankAccountIBAN": "GB82 WEST 1234 5698 7654 32"
+    },
+    "options": {
+      "matchMethod": "All",
+      "minimumConfidenceScore": 0.65
+    }
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "matchResults": [
+      {
+        "sourceSystemId": "SUPP001",
+        "match": {
+          "supplierId": 101,
+          "businessUnitId": 1,
+          "sourceSystem": "ERP_SYSTEM",
+          "sourceSystemId": "SUPP001",
+          "name": "Smith Manufacturing Ltd",
+          "companyNumber": "12345678",
+          "isActive": true
+        },
+        "confidenceScore": 0.945,
+        "matchResultReason": "MatchFound",
+        "message": null
+      },
+      {
+        "sourceSystemId": "SUPP042",
+        "match": {
+          "supplierId": 142,
+          "businessUnitId": 1,
+          "sourceSystem": "ERP_SYSTEM",
+          "sourceSystemId": "SUPP042",
+          "name": "Smith Manufacturing (Europe) Ltd",
+          "companyNumber": null,
+          "isActive": true
+        },
+        "confidenceScore": 0.723,
+        "matchResultReason": "MatchFound",
+        "message": null
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Matching options
+
+Control how matching behaves with these options:
+
+### Match method
+
+Determines how the engine processes and returns results.
+
+- **`Fast`** (default) - Returns the first match that exceeds the confidence threshold. Efficient and stops processing once a match is found.
+- **`Best`** - Evaluates all candidates, then returns only the single best match (highest confidence score).
+- **`All`** - Evaluates all candidates and returns all matches that exceed the confidence threshold, ranked by score.
+
+```json
+{
+  "matchMethod": "Best",
+  "minimumConfidenceScore": 0.65
+}
+```
+
+### Minimum confidence score
+
+Filters results below this threshold. Scores range from 0 to 1, where 0 is a complete non-match and 1 is a perfect match. Default is 0.70.
+
+```json
+{
+  "minimumConfidenceScore": 0.65
+}
+```
+
+**Guidance:**
+- **0.70–1.0:** Very likely match. Safe to auto-action without review.
+- **0.50–0.70:** Likely match. Recommend manual review before actioning.
+- **0.30–0.50:** Possible match. Review against source data before actioning.
+- **0.00–0.30:** Weak match. Discard or investigate data quality.
+
+<Warning>
+In rare cases, scores may exceed 1.0 due to implementation quirks. If you encounter an impossible score (greater than 1.0 or less than 0.0), this indicates a data quality issue or a system bug. Contact your platform administrator if you consistently see out-of-range scores.
+</Warning>
+
+<Tip>
+Adjust `minimumConfidenceScore` based on your use case. Higher thresholds reduce false positives but may miss valid matches with imperfect data.
+</Tip>
+
+### Allow normalisation
+
+Enable automatic normalisation of data (spaces, case, punctuation) before matching. Default is `true`.
+
+```json
+{
+  "allowNormalisation": true
+}
+```
+
+Set to `false` to match exactly as provided (rarely needed).
+
+### Ignore empty fields
+
+If `true`, fields with no value are ignored during matching. If `false`, empty fields are treated as non-matches. Default is `false`.
+
+```json
+{
+  "ignoreEmptyFields": true
+}
+```
+
+**Example:** If your incoming supplier has no phone number but master data does, setting this to `true` won't penalise the match for the missing field.
+
+### Field weights
+
+Default weights prioritise unique identifiers (company number, IBAN) over general fields (name, address). Identifier fields also default to exact matching, while descriptive fields like name and address use fuzzy (typo-tolerant) matching. Both can be overridden per request via `fieldWeights` and `fuzzyMatchingEnabled` in the `options` object:
+
+```json
+{
+  "options": {
+    "fieldWeights": { "Name": 2.0, "EmailAddress": 3.0 },
+    "fuzzyMatchingEnabled": { "Name": false }
+  }
+}
+```
+
+---
+
+## Understanding results
+
+Each match response includes one or more results. Each result tells you which master record was matched, its confidence score (0–1), and a reason code explaining the outcome: `MatchFound`, `NoRecordsFound`, or `NoRecordsMetConfidenceThreshold`.
+
+For example, if candidates exist but none meet your threshold:
+
+```json
+{
+  "matchResultReason": "NoRecordsMetConfidenceThreshold",
+  "confidenceScore": 0,
+  "message": "Candidates were found but none met the minimum confidence threshold of 0.65"
+}
+```
+
+For full response field definitions, see the [API reference](/api-reference/suppliers/match).
+
+---
+
+## Example: address matching
+
+**Request:**
+
+```bash
+curl -X POST "https://spectrumsuite.azurewebsites.net/api/addresses/match" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": {
+      "businessUnitId": 1,
+      "name": "Main Office",
+      "addressLine1": "123 Industrial Rd",
+      "postcode": "M1 2AB",
+      "city": "Manchester",
+      "county": "Greater Manchester",
+      "type": "Billing"
+    }
+  }'
+```
+
+Note: `options` can be omitted to use defaults.
+
+**Response:**
+
+```json
+{
+  "data": {
+    "matchResults": [
+      {
+        "sourceSystemId": null,
+        "match": {
+          "addressId": 501,
+          "businessUnitId": 1,
+          "name": "Main Office",
+          "addressLine1": "123 Industrial Road",
+          "postcode": "M1 2AB",
+          "city": "Manchester",
+          "type": "Billing"
+        },
+        "confidenceScore": 0.890,
+        "matchResultReason": "MatchFound",
+        "message": null
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Common matching scenarios
+
+### Scenario 1: Supplier name only
+
+Sometimes you only have a supplier name (no company number or IBAN). Matching still works:
+
+```json
+{
+  "supplier": {
+    "businessUnitId": 1,
+    "name": "ACME Corp"
+  },
+  "options": {
+    "minimumConfidenceScore": 0.50,
+    "matchMethod": "Best"
+  }
+}
+```
+
+**What happens:**
+1. Candidate shortlisting finds suppliers with similar name prefixes
+2. Fuzzy matching scores them
+3. Lower confidence scores returned (name alone is less distinctive)
+
+**Tip:** Use `minimumConfidenceScore: 0.50` to see all candidates for manual review.
+
+### Scenario 2: Strong identifiers (company number, IBAN)
+
+When you have strong identifiers, matching is highly accurate:
+
+```json
+{
+  "supplier": {
+    "businessUnitId": 1,
+    "name": "Smith Mfg",
+    "companyNumber": "12345678",
+    "bankAccountIBAN": "GB82 WEST 1234 5698 7654 32"
+  }
+}
+```
+
+**What happens:**
+1. Company number match shortlists the candidate
+2. Perfect match returned at a confidence score of ~0.95 or above
+3. Other fields are ignored (already confident)
+
+### Scenario 3: Debugging low scores
+
+If you're getting unexpectedly low scores, try:
+
+```json
+{
+  "options": {
+    "matchMethod": "All",
+    "minimumConfidenceScore": 0.0,
+    "ignoreEmptyFields": true
+  }
+}
+```
+
+This returns all candidates with scores, helping you see where matches are failing.
+
+---
+
+## Best practices
+
+1. **Always provide key identifiers** - Company number, IBAN, or postcode significantly boost accuracy
+2. **Match with complete data** - More fields = better scoring (but null fields can be ignored with `ignoreEmptyFields: true`)
+3. **Use appropriate confidence thresholds** - 0.70+ to auto-action, 0.50–0.70 for manual review, 0.30–0.50 to review carefully, below 0.30 to investigate data quality
+4. **Test before deploying** - Try matching a few records with default options first
+5. **Adjust field weights if needed** - If matching consistently underscores a field important to your business, increase its weight
+6. **Review "no matches found"** - If no candidates exist, the record may be new to your master data
+7. **Monitor for anomalies** - Report confidence scores outside the 0–1 range; these indicate a system issue
+
+---
+
+## Next steps
+
+- **[Matching line items (legacy)](/api-guide/matching-line-items-legacy)** - Match invoice line items against external data
+- **[Importing and querying data](/api-guide/importing-and-querying-data)** - Ensure your master data is loaded
+- **[Business glossary](/core-concepts/business-glossary)** - Understand matching concepts and data quality

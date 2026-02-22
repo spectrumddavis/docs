@@ -1,0 +1,40 @@
+---
+title: 'Batch upsert purchase order lines'
+openapi: 'api-reference/openapi.json PUT /purchase-order-lines/batch-upsert'
+---
+
+Imports or updates purchase order lines in bulk using the standard [batch upsert pattern](/api-reference/common-batch-upsert).
+
+**Endpoint:** `PUT /api/purchase-order-lines/batch-upsert`
+
+---
+
+## Purchase order line-specific notes
+
+- Import purchase order lines **after** importing their parent [Batch upsert purchase orders](/api-reference/purchase-orders/upsert).
+
+---
+
+## Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sourceSystem` | string | Yes | Name of the source system |
+| `sourceSystemId` | string | Yes | Unique identifier in the source system |
+| `purchaseOrderId` | string | Yes | ID of the parent purchase order |
+| `businessUnitId` | string | Yes | ID of the owning business unit |
+| `lineNumber` | integer | No | Line number within the purchase order |
+| `releaseNumber` | integer | No | Release number (for blanket orders) |
+| `productCode` | string | No | Product or SKU code |
+| `productDescription` | string | No | Product description |
+| `quantity` | decimal | No | Quantity ordered |
+| `quantityUnit` | string | No | Unit of measure for quantity (e.g. `EA`, `KG`) |
+| `quantityInvoiced` | decimal | No | Quantity already invoiced |
+| `quantityRemaining` | decimal | No | Quantity still outstanding |
+| `unitPrice` | decimal | No | Price per unit |
+| `pricingUnit` | decimal | No | The quantity that `unitPrice` applies to (e.g., `1`, `100`) |
+| `weight` | decimal | No | Weight per unit |
+| `weightUnitPrice` | decimal | No | Price per unit of weight |
+| `taxRate` | decimal | No | Applied tax rate (e.g. `0.20` for 20%) |
+| `lineTotal` | decimal | No | Total line value |
+| `type` | string | No | Line type |

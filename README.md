@@ -1,55 +1,52 @@
-# Mintlify Starter Kit
+# Spectrum Suite Docs
 
-Use the starter kit to get your docs deployed and ready to customize.
+Documentation for the Spectrum Suite API, built with [Mintlify](https://mintlify.com).
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+## Structure
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+```
+docs/
+├── api-guide/                 # Conceptual guides
+│   ├── importing-and-querying-data.mdx
+│   ├── matching-business-entities.mdx
+│   ├── matching-line-items-legacy.mdx
+│   └── workflow-overview.mdx
+├── api-reference/             # Endpoint reference pages
+│   ├── openapi.json           # OpenAPI spec (auto-generated from API)
+│   └── {entity}/              # One directory per API entity
+├── core-concepts/
+│   └── business-glossary.mdx
+├── getting-started/
+│   └── authentication.mdx
+├── images/
+│   └── logos/                 # Site logo and favicon
+├── docs.json                  # Site config and navigation
+└── index.mdx                  # Landing page
+```
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
-
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
+## Local development
 
 ```bash
-npx skills add https://mintlify.com/docs
-```
-
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
-
-See the [AI tools guides](/ai-tools) for tool-specific setup.
-
-## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
-```
 npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
 mint dev
 ```
 
-View your local preview at `http://localhost:3000`.
+Preview at `http://localhost:3000`.
 
-## Publishing changes
+## Updating the API spec
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+The `api-reference/openapi.json` file is generated from the running Spectrum Suite API:
 
-## Need help?
+```
+GET https://spectrumsuite-dev.azurewebsites.net/openapi/v1.json
+```
 
-### Troubleshooting
+Replace `api-reference/openapi.json` with the downloaded spec, then restart `mint dev`.
 
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
+## Checking for broken links
 
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+```bash
+mint broken-links
+```
+
+> Note: pages that use `openapi:` frontmatter are reported as broken by `mint broken-links` due to a known limitation of the Mintlify v4 CLI — they resolve correctly in the live site.

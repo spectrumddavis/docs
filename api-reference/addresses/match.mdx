@@ -1,0 +1,21 @@
+---
+title: 'Match address against master data'
+openapi: 'api-reference/openapi.json POST /addresses/match'
+---
+
+Matches an address against your tenant's master data. Returns a ranked list of candidates with confidence scores.
+
+**Endpoint:** `POST /api/addresses/match`
+
+For a conceptual overview of the matching algorithm, shortlisting stages, options (match method, confidence threshold, field weights, fuzzy matching), and result interpretation, see [Matching business entities](/api-guide/matching-business-entities).
+
+---
+
+## Required request fields
+
+The `address` object must include the following fields. All other fields are optional — provide as many as you have to improve match accuracy.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `businessUnitId` | `integer` | The ID of the business unit to match within. |
+| `type` | `string` | Address type (e.g. `"Billing"`, `"Delivery"`). |

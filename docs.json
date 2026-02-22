@@ -1,122 +1,213 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Spectrum Suite",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0073D1",
+    "light": "#4A90E2",
+    "dark": "#005BB5"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/images/logos/website-icon-230x230.svg",
   "navigation": {
     "tabs": [
       {
         "tab": "Guides",
         "groups": [
           {
-            "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "development"
-            ]
+            "group": "Getting Started",
+            "pages": ["index", "getting-started/authentication"]
           },
           {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
+            "group": "Core Concepts",
+            "pages": ["core-concepts/business-glossary"]
           },
           {
-            "group": "Writing content",
+            "group": "API Guide",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "api-guide/workflow-overview",
+              "api-guide/importing-and-querying-data",
+              "api-guide/matching-business-entities",
+              "api-guide/matching-line-items-legacy"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Getting Started",
+            "pages": ["api-reference/introduction"]
+          },
+          {
+            "group": "Common Patterns",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/common-paginated-query",
+              "api-reference/common-get-single-record",
+              "api-reference/common-batch-upsert"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Addresses",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/addresses/query",
+              "api-reference/addresses/upsert",
+              "api-reference/addresses/get-single",
+              "api-reference/addresses/match"
+            ]
+          },
+          {
+            "group": "Business Units",
+            "pages": [
+              "api-reference/business-units/query",
+              "api-reference/business-units/upsert",
+              "api-reference/business-units/get-single",
+              "api-reference/business-units/match"
+            ]
+          },
+          {
+            "group": "Customers",
+            "pages": [
+              "api-reference/customers/query",
+              "api-reference/customers/upsert",
+              "api-reference/customers/get-single",
+              "api-reference/customers/match"
+            ]
+          },
+          {
+            "group": "External Items",
+            "pages": [
+              "api-reference/external-items/query",
+              "api-reference/external-items/get-single"
+            ]
+          },
+          {
+            "group": "Invoice Line Items",
+            "pages": [
+              "api-reference/invoice-line-items/validate",
+              "api-reference/invoice-line-items/match"
+            ]
+          },
+          {
+            "group": "Invoices",
+            "pages": [
+              "api-reference/invoices/validate"
+            ]
+          },
+          {
+            "group": "Nominal Codes",
+            "pages": [
+              "api-reference/nominal-codes/query",
+              "api-reference/nominal-codes/upsert",
+              "api-reference/nominal-codes/get-single"
+            ]
+          },
+          {
+            "group": "Purchase Order Lines",
+            "pages": [
+              "api-reference/purchase-order-lines/query",
+              "api-reference/purchase-order-lines/upsert",
+              "api-reference/purchase-order-lines/get-single"
+            ]
+          },
+          {
+            "group": "Purchase Orders",
+            "pages": [
+              "api-reference/purchase-orders/query",
+              "api-reference/purchase-orders/upsert",
+              "api-reference/purchase-orders/get-single"
+            ]
+          },
+          {
+            "group": "Purchase Tax Codes",
+            "pages": [
+              "api-reference/purchase-tax-codes/query",
+              "api-reference/purchase-tax-codes/upsert",
+              "api-reference/purchase-tax-codes/get-single"
+            ]
+          },
+          {
+            "group": "Purchase Transactions",
+            "pages": [
+              "api-reference/purchase-transactions/query",
+              "api-reference/purchase-transactions/upsert",
+              "api-reference/purchase-transactions/get-single"
+            ]
+          },
+          {
+            "group": "Receipt Lines",
+            "pages": [
+              "api-reference/receipt-lines/query",
+              "api-reference/receipt-lines/upsert",
+              "api-reference/receipt-lines/get-single"
+            ]
+          },
+          {
+            "group": "Receipts",
+            "pages": [
+              "api-reference/receipts/query",
+              "api-reference/receipts/upsert",
+              "api-reference/receipts/get-single"
+            ]
+          },
+          {
+            "group": "Suppliers",
+            "pages": [
+              "api-reference/suppliers/query",
+              "api-reference/suppliers/upsert",
+              "api-reference/suppliers/get-single",
+              "api-reference/suppliers/match"
+            ]
+          },
+          {
+            "group": "Unit of Measure Conversions",
+            "pages": [
+              "api-reference/unit-of-measure-conversions/query",
+              "api-reference/unit-of-measure-conversions/upsert",
+              "api-reference/unit-of-measure-conversions/get-single"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/images/logos/website-icon-230x230.svg",
+    "dark": "/images/logos/website-icon-230x230.svg"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:ddavis@spectrum.tech"
       }
+    ]
+  },
+  "api": {
+    "baseUrl": [
+      "https://spectrumsuite.azurewebsites.net/api",
+      "https://spectrumsuite-dev.azurewebsites.net/api"
     ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+    "auth": {
+      "method": "bearer"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://dev.azure.com/itatspectrum",
+      "linkedin": "https://linkedin.com/company/spectrum-digital-tech"
     }
   }
 }

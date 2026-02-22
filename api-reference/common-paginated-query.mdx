@@ -1,0 +1,121 @@
+---
+title: 'Paginated query'
+description: 'Standard pattern for retrieving paginated lists of records'
+---
+
+import RequiredHeaders from '/snippets/required-headers.mdx'
+
+## Overview
+
+All collection endpoints in Spectrum Suite use **cursor-based pagination**. This pattern is consistent across every entity type — suppliers, customers, purchase orders, receipts, and all others.
+
+Cursor-based pagination is more efficient than offset pagination for large datasets. Rather than skipping a fixed number of rows, each page returns a cursor that points to the last record returned. You use that cursor to fetch the next page.
+
+---
+
+## Request
+
+**Method:** `GET /api/{entity}`
+
+<RequiredHeaders />
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `pageSize` | `integer` | `100` | Number of records to return. Maximum `1000`. |
+| `cursor` | `integer` | _(none)_ | Cursor from a previous response's `nextCursor`. Omit on the first request. |
+
+### Example
+
+```bash Request
+# First page
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers?pageSize=50" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1"
+
+# Next page (using cursor from previous response)
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers?pageSize=50&cursor=1234" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1"
+```
+
+---
+
+## Response
+
+```json Response
+{
+  "data": {
+    "results": [
+      {
+        "supplierId": 1,
+        "name": "Acme Supplies Inc",
+        "businessUnitId": 1,
+        "isActive": true
+      },
+      {
+        "supplierId": 2,
+        "name": "Global Widgets Ltd",
+        "businessUnitId": 1,
+        "isActive": true
+      }
+    ],
+    "nextCursor": 1234,
+    "hasNextPage": true,
+    "returned": 50
+  },
+  "message": null
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data.results` | `array` | The records in this page |
+| `data.returned` | `integer` | Number of records in this page |
+| `data.hasNextPage` | `boolean` | `true` if further pages exist |
+| `data.nextCursor` | `integer \| null` | Pass this as `cursor` in your next request. `null` when this is the last page. |
+| `message` | `string \| null` | Optional informational message — usually `null` |
+
+---
+
+## Iterating all pages
+
+To retrieve all records, loop until `hasNextPage` is `false`:
+
+```js JavaScript
+let cursor = undefined;
+let allRecords = [];
+
+do {
+  const params = new URLSearchParams({ pageSize: 100 });
+  if (cursor !== undefined) params.append('cursor', cursor);
+
+  const response = await fetch(`https://spectrumsuite.azurewebsites.net/api/suppliers?${params}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-Tenant-Id': '1'
+    }
+  });
+
+  const { data } = await response.json();
+  allRecords.push(...data.results);
+  cursor = data.nextCursor;
+
+} while (data.hasNextPage);
+```
+
+---
+
+## Error codes
+
+| Code | Meaning |
+|------|---------|
+| `400` | Invalid query parameters (e.g., `pageSize` out of range) |
+| `401` | Missing or invalid bearer token |
+| `403` | Not authorised for this tenant |
+| `500` | Internal server error |
+
+See [API Reference introduction](/api-reference/introduction#error-codes) for the full error envelope format.

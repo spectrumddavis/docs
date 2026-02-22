@@ -1,0 +1,26 @@
+---
+title: 'Batch upsert purchase orders'
+openapi: 'api-reference/openapi.json PUT /purchase-orders/batch-upsert'
+---
+
+Imports or updates purchase orders in bulk using the standard [batch upsert pattern](/api-reference/common-batch-upsert).
+
+**Endpoint:** `PUT /api/purchase-orders/batch-upsert`
+
+---
+
+## Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sourceSystem` | string | Yes | Name of the source system (e.g. `"SAP"`) |
+| `sourceSystemId` | string | Yes | Unique identifier in the source system |
+| `businessUnitId` | string | Yes | ID of the owning business unit |
+| `supplierId` | string | Yes | ID of the supplier for this purchase order |
+| `reference` | string | No | Purchase order reference number |
+| `date` | string (date) | No | Date of the purchase order (ISO 8601) |
+| `status` | string | No | Order status (e.g. `Open`, `Closed`) |
+| `totalNet` | decimal | No | Total net value of the purchase order |
+| `requisitionerEmail` | string | No | Email of the person who raised the order |
+| `expectedDate` | string (date) | No | Expected delivery date (ISO 8601) |
+| `type` | string | No | Purchase order type |

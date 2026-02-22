@@ -1,0 +1,84 @@
+---
+title: 'Get single record'
+description: 'Standard pattern for retrieving a single record by ID'
+---
+
+import RequiredHeaders from '/snippets/required-headers.mdx'
+
+## Overview
+
+All entities in Spectrum Suite support retrieval of a single record by its unique integer ID. This pattern is consistent across every entity type.
+
+---
+
+## Request
+
+**Method:** `GET /api/{entity}/{id}`
+
+<RequiredHeaders />
+
+### Path parameter
+
+| Parameter | Type | Constraints | Description |
+|-----------|------|-------------|-------------|
+| `id` | `integer` | Min: `1` | The unique identifier of the record |
+
+### Example
+
+```bash Request
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers/42" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1"
+```
+
+---
+
+## Response
+
+On success, the response wraps the entity record in a `data` field:
+
+```json 200 OK
+{
+  "data": {
+    "supplierId": 42,
+    "name": "Acme Supplies Inc",
+    "businessUnitId": 1,
+    "companyNumber": "12345678",
+    "vatRegistrationNumber": "GB123456789",
+    "addressLine1": "1 Example Street",
+    "city": "London",
+    "postcode": "EC1A 1BB",
+    "isActive": true
+  },
+  "message": null
+}
+```
+
+---
+
+## Not found
+
+If the record with the given `id` does not exist (or does not belong to your tenant), the API returns `404`:
+
+```json 404 Not found
+{
+  "type": "https://www.rfc-editor.org/rfc/rfc9110#name-404-not-found",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "Resource with id 42 was not found."
+}
+```
+
+---
+
+## Error codes
+
+| Code | Meaning |
+|------|---------|
+| `400` | Invalid ID (e.g., non-integer or less than 1) |
+| `401` | Missing or invalid bearer token |
+| `403` | Not authorised for this tenant |
+| `404` | Record not found |
+| `500` | Internal server error |
+
+See [API Reference introduction](/api-reference/introduction#error-codes) for the full error envelope format.

@@ -1,0 +1,18 @@
+# Normalise line endings on commit; check out with OS-native endings
+* text=auto
+
+# Always LF for text formats used in this repo
+*.mdx text eol=lf
+*.md  text eol=lf
+*.json text eol=lf
+*.svg text eol=lf
+*.css text eol=lf
+*.js  text eol=lf
+*.ts  text eol=lf
+
+# Binary — no line-ending processing
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary

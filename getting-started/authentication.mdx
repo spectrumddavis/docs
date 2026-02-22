@@ -1,0 +1,188 @@
+---
+title: "Authentication"
+description: "Secure your API requests with OAuth 2.0 and bearer token authentication"
+---
+
+## Overview
+
+Spectrum Suite uses **JWT bearer token authentication** to secure all API endpoints. The platform supports two authentication flows:
+
+1. **App-to-app OAuth 2.0** - Recommended for service-to-service integrations (Therefore™, ABBYY, Toca®)
+2. **User-to-app OAuth 2.0** - Recommended for testing, debugging, and delegated access via SSO
+
+Most requests must include the `X-Tenant-Id` header to identify which tenant owns the data. Stateless endpoints — such as invoice validation — do not require it. Each endpoint page notes whether the header is needed.
+
+<Tip>
+  **Using a low-code or workflow platform?** Tools like Therefore™, Toca®, and most similar platforms have built-in OAuth 2.0 support, so you don't need to make a separate token request before each API call. Instead, configure authentication once in the platform's **Authorisation** settings — select **OAuth 2.0 – Client Credentials** (for service-to-service) or **OAuth 2.0 – Authorisation Code** (for user-delegated access) — and the platform will handle token acquisition and renewal automatically. Your individual API task or action then only needs to define the request itself.
+</Tip>
+
+---
+
+## Endpoints
+
+Use the appropriate endpoint based on your environment:
+
+| Environment | Base URL |
+|---|---|
+| **Production** | `https://spectrumsuite.azurewebsites.net/api` |
+| **Development** | `https://spectrumsuite-dev.azurewebsites.net/api` |
+
+All examples below use the production endpoint. Replace with the dev endpoint as needed.
+
+---
+
+## App-to-app OAuth 2.0 flow
+
+This is the recommended approach for your cloud integrations, API tasks in Therefore™/ABBYY/Toca®, and server-side applications.
+
+### Prerequisites
+
+Your integration requires:
+- **Client ID** - Your application's unique identifier
+- **Client Secret** - Confidential key (store securely)
+- **Scope** - `api://{audience}/.default` or `api://{audience}/access` (provided during setup — when using Microsoft Entra app registrations, `/.default` is the most common scope format)
+- **Authority** - Azure Entra ID endpoint (e.g., `https://login.microsoftonline.com/{tenantId}/v2.0`)
+
+### Obtaining an access token
+
+Make a POST request to the token endpoint:
+
+<CodeGroup>
+```bash Request
+curl -X POST "https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id={clientId}" \
+  -d "client_secret={clientSecret}" \
+  -d "scope=api://{audience}/access" \
+  -d "grant_type=client_credentials"
+```
+
+```json Response
+{
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5..."
+}
+```
+</CodeGroup>
+
+### Using the token
+
+Once you have the `access_token`, include it in all subsequent API requests:
+
+```bash Example request
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers" \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5..." \
+  -H "X-Tenant-Id: 1"
+```
+
+**Why use OAuth 2.0?**
+- Tokens expire automatically (default 1 hour)
+- No need to store passwords in platform configs
+- Platform-approved for production integrations
+- Supports delegation of permissions
+- Audit-friendly with service principal tracking
+
+---
+
+## User-to-app OAuth 2.0 flow
+
+This flow is ideal for **testing and debugging in Postman** using your own credentials via SSO, avoiding the need to manage service principal configurations during development.
+
+### Prerequisites
+
+- Access to an Azure Entra ID account with tenant access
+- Swagger OAuth configuration details:
+  - **Client ID** - Application client ID
+  - **Scope** - `api://{audience}/access`
+  - **Authority** - Azure Entra ID endpoint
+
+### Testing in Postman
+
+<Steps>
+  <Step title="Open Postman">
+    Open Postman and create a new request.
+  </Step>
+  <Step title="Set up authorisation">
+    In the **Authorization** tab, select **OAuth 2.0**.
+  </Step>
+  <Step title="Configure OAuth 2.0">
+    Configure the following:
+    - **Grant Type**: `Authorization Code`
+    - **Callback URL**: `https://oauth.pstmn.io/v1/callback` (Postman's default)
+    - **Auth URL**: `https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/authorize`
+    - **Access Token URL**: `https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token`
+    - **Client ID**: Your application's client ID
+    - **Client Secret**: Your application's client secret
+    - **Scope**: `api://{audience}/access`
+    - **State**: Leave blank
+  </Step>
+  <Step title="Authenticate">
+    Click **Get New Access Token** and authenticate via your SSO provider.
+  </Step>
+  <Step title="Send requests">
+    Use the token and send requests. Include the `X-Tenant-Id` header for tenant-scoped endpoints.
+  </Step>
+</Steps>
+
+<Tip>
+User-to-app authentication allows you to test as yourself, making it easier to debug data and understand why matches succeed or fail without managing service accounts.
+</Tip>
+
+---
+
+## Tenant context
+
+Most API endpoints require the `X-Tenant-Id` header. This header:
+- Identifies which tenant owns the data
+- Enforces data isolation (users can only access their own tenant's data)
+- Is validated by the API before processing
+
+Stateless endpoints (invoice validation, legacy matching) do not use tenant context and do not require this header — this is noted on each endpoint's page.
+
+### Adding the tenant header
+
+<CodeGroup>
+```bash curl
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1"
+```
+
+```json Therefore™ (REST call)
+{
+  "url": "https://spectrumsuite.azurewebsites.net/api/suppliers",
+  "method": "GET",
+  "headers": {
+    "Authorization": "Bearer ${access_token}",
+    "X-Tenant-Id": "1"
+  }
+}
+```
+</CodeGroup>
+
+**In Postman:** click the **Headers** tab, then add a new header with key `X-Tenant-Id` and your numeric tenant ID as the value (e.g., `1`, `2`, `42`).
+
+<Warning>
+Omitting the `X-Tenant-Id` header from a tenant-scoped endpoint will result in a **400 Bad Request** error. Check the individual endpoint page to confirm whether the header is required — stateless endpoints (validation, legacy matching) do not need it.
+</Warning>
+
+---
+
+## Common authentication errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `401 Unauthorized` | Invalid or expired token | Refresh your access token via OAuth 2.0 or re-authenticate |
+| `403 Forbidden` | Token valid but no permission for this tenant | Verify your service principal or user account has been granted access to the tenant |
+| `400 Bad Request` | Missing `X-Tenant-Id` header on a tenant-scoped endpoint | Add the header: `X-Tenant-Id: {tenantId}` |
+| `401 Unauthorized` (Swagger) | Invalid client ID, scope, or token endpoint | Contact your administrator to verify OAuth 2.0 configuration |
+| `invalid_client` (token request) | Incorrect client ID or client secret | Verify your credentials match the Azure Entra ID app registration |
+
+---
+
+## Next steps
+
+- **[Workflow overview](/api-guide/workflow-overview)** - Understand how import, query, matching, and validation fit together
+- **[Importing and querying data](/api-guide/importing-and-querying-data)** - Batch upsert records and retrieve entities
+- **[Matching business entities](/api-guide/matching-business-entities)** - Match suppliers, customers, and more against master data

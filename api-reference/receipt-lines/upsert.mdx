@@ -1,0 +1,36 @@
+---
+title: 'Batch upsert receipt lines'
+openapi: 'api-reference/openapi.json PUT /receipt-lines/batch-upsert'
+---
+
+Imports or updates receipt lines in bulk using the standard [batch upsert pattern](/api-reference/common-batch-upsert).
+
+**Endpoint:** `PUT /api/receipt-lines/batch-upsert`
+
+---
+
+## Receipt line-specific notes
+
+- Import receipt lines **after** importing their parent [Batch upsert receipts](/api-reference/receipts/upsert) and the related [Batch upsert purchase order lines](/api-reference/purchase-order-lines/upsert).
+
+---
+
+## Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sourceSystem` | string | Yes | Name of the source system |
+| `sourceSystemId` | string | Yes | Unique identifier in the source system |
+| `receiptId` | string | Yes | ID of the parent receipt (GRN) |
+| `purchaseOrderLineId` | string | Yes | ID of the matched purchase order line |
+| `businessUnitId` | string | Yes | ID of the owning business unit |
+| `lineNumber` | integer | No | Line number within the receipt |
+| `releaseNumber` | integer | No | Release number (for blanket orders) |
+| `quantity` | decimal | No | Quantity received |
+| `quantityUnit` | string | No | Unit of measure for quantity (e.g. `EA`, `KG`) |
+| `unitPrice` | decimal | No | Price per unit at time of receipt |
+| `pricingUnit` | decimal | No | The quantity that `unitPrice` applies to (e.g., `1`, `100`) |
+| `weight` | decimal | No | Weight |
+| `weightUnitPrice` | decimal | No | Price per unit of weight |
+| `lineTotal` | decimal | No | Total value of this receipt line |
+| `deliveryReference` | string | No | Delivery or consignment reference |

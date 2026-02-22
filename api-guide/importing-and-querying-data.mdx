@@ -1,0 +1,333 @@
+---
+title: "Importing and querying data"
+description: "Batch upsert entities and retrieve data from Spectrum Suite"
+---
+
+## Introduction
+
+Before you can match entities, you need to populate Spectrum Suite with master data. The **import** operation (batch upsert) allows you to efficiently load or update suppliers, customers, business units, addresses, and other entities. The **query** operation lets you retrieve those entities when needed.
+
+Import is **optional**—if you're only matching line items without persisting external data, you can skip directly to matching.
+
+---
+
+## Importing data (batch upsert)
+
+### What is import?
+
+Import uses batch upsert semantics: if a record with matching `sourceSystem` and `sourceSystemId` exists, it's updated; otherwise, it's created. This means you can safely re-import data without worrying about duplicates.
+
+### Supported entities
+
+The following entities can be imported:
+- Suppliers
+- Customers
+- Business Units
+- Addresses
+- Purchase Orders
+- Purchase Order Lines
+- Receipts
+- Receipt Lines
+- Nominal Codes
+- Purchase Tax Codes
+- Purchase Transactions
+- Unit of Measure Conversions
+
+### Creating an import request
+
+All import endpoints follow the same pattern: `PUT /api/{entity}/batch-upsert`, accepting an array of upsert DTOs.
+
+**Basic example: Import suppliers**
+
+```json
+PUT /api/suppliers/batch-upsert
+
+[
+  {
+    "sourceSystem": "ERP_SYSTEM",
+    "sourceSystemId": "SUPP001",
+    "businessUnitId": "1",
+    "name": "Smith Manufacturing Ltd",
+    "companyNumber": "12345678",
+    "vatRegistrationNumber": "GB123456789",
+    "addressLine1": "123 Industrial Road",
+    "addressLine2": "Suite 100",
+    "postcode": "M1 2AB",
+    "city": "Manchester",
+    "county": "Greater Manchester",
+    "bankAccountIBAN": "GB82 WEST 1234 5698 7654 32",
+    "bankAccountSortCode": "203026",
+    "telephoneNumber": "+44 161 123 4567",
+    "emailAddress": "contact@smithmanufacturing.co.uk",
+    "isActive": true
+  },
+  {
+    "sourceSystem": "ERP_SYSTEM",
+    "sourceSystemId": "SUPP002",
+    "businessUnitId": "1",
+    "name": "Johnson Supplies Ltd",
+    "companyNumber": "87654321",
+    "vatRegistrationNumber": "GB987654321",
+    "addressLine1": "456 Commerce Street",
+    "postcode": "B5 7QA",
+    "city": "Birmingham",
+    "isActive": true
+  }
+]
+```
+
+### Required and optional fields
+
+**Always required:**
+- `sourceSystem` - The system the record originated from (e.g., "ERP_SYSTEM", "SALESFORCE")
+- `sourceSystemId` - The unique ID from that system (used to identify updates)
+- `businessUnitId` - Which business unit owns this entity (**exception:** not required when importing Business Units themselves, since they are the root entity)
+- For most entities: at least one identifying field (name, company number, IBAN, etc.)
+
+**Often important for matching:**
+- `companyNumber` - Used in candidate shortlisting
+- `vatRegistrationNumber` - Used in candidate shortlisting
+- `bankAccountIBAN` / `bankAccountSortCode` - Used in candidate shortlisting
+- `postcode` - Used in candidate shortlisting
+
+**Optional:**
+- Everything else. You can supply as much or as little detail as available.
+
+<Tip>
+The more complete your data (especially identifiers), the better matching will perform. However, you can import partial data and update it later via re-import—upsert will update existing records.
+</Tip>
+
+### Import response
+
+The import endpoint returns a summary of what happened:
+
+```json
+{
+  "data": {
+    "totalCount": 2,
+    "successCount": 2,
+    "failedCount": 0,
+    "failures": []
+  }
+}
+```
+
+**Fields:**
+- `totalCount` - Total records processed
+- `successCount` - Records created or updated successfully
+- `failedCount` - Records that failed (validation errors, database issues)
+- `failures` - Array of detailed error information for each failure
+
+### When import fails
+
+If records fail to import, check the `failures` array for details:
+
+```json
+{
+  "data": {
+    "totalCount": 2,
+    "successCount": 1,
+    "failedCount": 1,
+    "failures": [
+      {
+        "sourceSystem": "ERP_SYSTEM",
+        "sourceSystemId": "SUPP002",
+        "reason": "Business unit with ID '999' does not exist"
+      }
+    ]
+  }
+}
+```
+
+**Common failure reasons:**
+- Business unit ID doesn't exist (verify the business unit exists first)
+- Invalid format (e.g., invalid VAT number format)
+- Database constraint violation
+- Missing required field
+
+**To recover:** Fix the data based on the failure reason and re-import. Successfully imported records won't be affected.
+
+---
+
+## Querying data
+
+### Query all entities (paginated)
+
+Retrieve all entities of a type with pagination.
+
+**Endpoint:**
+```
+GET /api/{entity}?cursor={cursor}&pageSize={pageSize}
+```
+
+**Example: Query suppliers with 50 per page**
+
+```bash
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers?pageSize=50" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1"
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "results": [
+      {
+        "businessUnitId": 1,
+        "supplierId": 101,
+        "sourceSystem": "ERP_SYSTEM",
+        "sourceSystemId": "SUPP001",
+        "name": "Smith Manufacturing Ltd",
+        "companyNumber": "12345678",
+        "isActive": true
+      },
+      {
+        "businessUnitId": 1,
+        "supplierId": 102,
+        "sourceSystem": "ERP_SYSTEM",
+        "sourceSystemId": "SUPP002",
+        "name": "Johnson Supplies Ltd",
+        "isActive": true
+      }
+    ],
+    "nextCursor": 103,
+    "hasNextPage": true,
+    "returned": 2
+  }
+}
+```
+
+### Pagination with cursors
+
+Spectrum Suite uses cursor-based pagination for efficient large-dataset traversal.
+
+**How it works:**
+1. First request: No cursor needed (or `cursor=null`)
+2. Response includes `nextCursor` if more results exist
+3. Next request: Pass `nextCursor` as your `cursor` parameter
+4. Repeat until `hasNextPage` is `false`
+
+**Example: Fetching all suppliers in batches**
+
+```bash
+# First page
+curl "https://spectrumsuite.azurewebsites.net/api/suppliers?pageSize=100"
+
+# Response indicates nextCursor: 103, hasNextPage: true
+
+# Second page
+curl "https://spectrumsuite.azurewebsites.net/api/suppliers?cursor=103&pageSize=100"
+
+# Continue until hasNextPage: false
+```
+
+### Query a single entity
+
+Retrieve a specific entity by ID.
+
+**Endpoint:**
+```
+GET /api/{entity}/{id}
+```
+
+**Example: Get supplier with ID 101**
+
+```bash
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers/101" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1"
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "supplierId": 101,
+    "businessUnitId": 1,
+    "sourceSystem": "ERP_SYSTEM",
+    "sourceSystemId": "SUPP001",
+    "name": "Smith Manufacturing Ltd",
+    "companyNumber": "12345678",
+    "vatRegistrationNumber": "GB123456789",
+    "addressLine1": "123 Industrial Road",
+    "postcode": "M1 2AB",
+    "city": "Manchester",
+    "isActive": true
+  }
+}
+```
+
+If the entity doesn't exist, you'll receive a 404:
+
+```json
+{
+  "type": "https://www.rfc-editor.org/rfc/rfc9110#name-404-not-found",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "Resource with id 101 was not found."
+}
+```
+
+### Filterable entities
+
+Currently, all queries support filtering via ID or paginated listing. Future versions may add field-level filtering.
+
+---
+
+## Practical workflow: import and verify
+
+A common pattern is to import data, then verify it was loaded correctly:
+
+```bash
+# 1. Import supplier data
+curl -X PUT "https://spectrumsuite.azurewebsites.net/api/suppliers/batch-upsert" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1" \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "sourceSystem": "ERP",
+      "sourceSystemId": "S001",
+      "businessUnitId": "1",
+      "name": "ACME Corp",
+      "companyNumber": "12345678"
+    }
+  ]'
+
+# Response: { "data": { "totalCount": 1, "successCount": 1, "failedCount": 0, "failures": [] }, "message": null }
+
+# 2. Query to find the imported entity's ID
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers?pageSize=10" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1"
+
+# Response includes the supplier with supplierId: 1
+
+# 3. Get the full record
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers/1" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1"
+```
+
+---
+
+## Common patterns
+
+| Scenario | Approach |
+|----------|----------|
+| One-time master data migration | Import everything at once, query to verify |
+| Regular updates from source system | Schedule periodic imports (upsert handles updates) |
+| Testing before matching | Import test data, query it, then match against it |
+| Updating a single record | Re-import that record with updated values (upsert will update it) |
+| Large imports (thousands of records) | Break into batches; upsert handles duplicates safely |
+
+---
+
+## Next steps
+
+- **[Matching business entities](/api-guide/matching-business-entities)** - Now that your master data is loaded, learn how to match against it
+- **[Authentication](/getting-started/authentication)** - Review token and tenant management
+- **[Business glossary](/core-concepts/business-glossary)** - Understand data quality and matching concepts

@@ -1,97 +1,84 @@
 ---
 title: "Introduction"
-description: "Welcome to the new home for your documentation"
+description: "Data matching and validation platform for business integrations"
 ---
 
-## Setting up
+## Welcome to Spectrum Suite
 
-Get your documentation site up and running in minutes.
+Spectrum Suite is a data matching and validation platform built to streamline entity reconciliation and data validation across your business integrations. Whether you're building Accounts Payable solutions, implementing reconciliation workflows, or integrating with platforms like Therefore™, ABBYY Vantage, and Toca®, Spectrum Suite provides the matching and validation capabilities you need.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+---
 
-## Make it yours
+## Key capabilities
 
-Design a docs site that looks great and empowers your users.
+**Entity matching**
+- Match customers, suppliers, business units, and addresses across disparate data sources
+- Choose between exact matching and configurable fuzzy matching with field-level weights
+- Normalise addresses, bank details, and company numbers for stronger matches
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+**Data validation**
+- Validate invoices and line items with configurable tolerance levels
+- Enforce business rules and catch data quality issues before they propagate downstream
+- Run validation as part of import workflows or independently
+
+**Batch import**
+- Efficiently upsert records in bulk using optimised SQL operations
+- Import from any system via REST API—no custom connectors needed
+- Aggregate import results and handle errors gracefully
+
+**Multi-tenant architecture**
+- Complete data isolation per tenant
+- Identity and authorisation integrated with Azure Entra ID
+- Perfect for shared platforms and distributed teams
+
+---
+
+## Typical use cases
+
+**Accounts payable**
+- Match supplier invoices to purchase orders and receipts
+- Validate invoice totals and line items
+- Resolve discrepancies before payment processing
+
+**Reconciliation and matching**
+- Identify duplicate or variant records across systems
+- Score and rank matches to help teams prioritise review
+- Configure matching weights to tune for your data characteristics
+
+**Data integration**
+- Clean and validate data during import from legacy systems
+- Enrich data with matched master records
+- Maintain data quality across platform boundaries
+
+---
+
+## Who uses Spectrum Suite
+
+Spectrum Suite is built for **teams integrating data across systems**—you might be a developer configuring API tasks in Therefore™, building capture workflows in ABBYY Vantage, or orchestrating processes in Toca®. You might be a technical stakeholder evaluating data quality, or a team lead understanding why a particular match didn't succeed.
+
+Whatever your role, this documentation is designed to help you understand the platform, integrate confidently, and troubleshoot issues.
+
+---
+
+## Getting started
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/getting-started/authentication">
+    Set up Bearer tokens and understand tenant context before making your first request.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Workflow overview" icon="map" href="/api-guide/workflow-overview">
+    Understand how import, query, matching, and validation fit together.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Business glossary" icon="book-open" href="/core-concepts/business-glossary">
+    Learn the key concepts behind entity matching and data quality.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Explore every endpoint with request shapes, field tables, and response examples.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+---
 
-Everything you need to create world-class documentation.
+## Support and feedback
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+Have questions? Found an issue? Reach out to the Spectrum Suite team via the support channel in your organisation.

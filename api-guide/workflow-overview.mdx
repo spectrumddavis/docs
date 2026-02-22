@@ -1,0 +1,184 @@
+---
+title: "Workflow overview"
+description: "Understand the main flows and how Spectrum Suite operations work together"
+---
+
+## Introduction
+
+Spectrum Suite supports two primary workflows: **entity matching** and **line-item matching**. While both workflows may involve importing and querying data, neither is strictly linear. Depending on your use case, you might skip import entirely and work with existing data, or provide document data on-the-fly without persistence.
+
+---
+
+## Core operations
+
+### Import
+
+Import new or updated entities into Spectrum Suite using batch upsert operations.
+
+**Typical use:** You're onboarding supplier master data from an ERP system.
+
+```
+Import(suppliers) → Data stored in Spectrum Suite database
+```
+
+**Supported entities:** Suppliers, Customers, Business Units, Addresses, Purchase Orders, Receipts, and related entities.
+
+**Optional:** Import is not required for all workflows. If you're only querying existing data or providing line items for matching, you can skip this step.
+
+---
+
+### Query
+
+Retrieve existing entities from Spectrum Suite with pagination and filtering.
+
+**Typical use:** You need to look up a supplier by name or ID.
+
+```
+Query(suppliers) → List of entities matching your criteria
+```
+
+**Supported entities:** All entities that can be imported plus others.
+
+**Always available:** Whether you imported data or it exists from a prior import, you can query at any time.
+
+---
+
+### Match
+
+Compare entities against your data to find the best matches. Spectrum Suite supports two matching types:
+
+#### Entity matching
+Match specific entities (suppliers, customers, business units, addresses) against your master data in Spectrum Suite.
+
+**Typical use:** You have an incoming supplier invoice and want to match it to your supplier master list.
+
+```
+Match(incoming_supplier) → Ranked list of candidates with confidence scores
+```
+
+**Requires:** Supplier master data to exist in Spectrum Suite (via prior import).
+
+**Supported entities:** Suppliers, Customers, Business Units, Addresses.
+
+---
+
+#### Line-item matching (legacy)
+Match invoice line items against external data sources (purchase orders, receipts, orders, etc.) without requiring persistence in Spectrum Suite.
+
+**Typical use:** You have an invoice with line items and want to find matching purchase orders or receipts.
+
+```
+Match(invoice_line_items, external_data_sets) → Matched line items with options
+```
+
+**Requires:** No import needed. Line items and external data provided in the request.
+
+**How it works:** More complex than entity matching; supports extensive configuration options including AI-assisted matching.
+
+---
+
+## Common workflows
+
+### Workflow A: supplier matching (entity matching)
+
+You want to match incoming supplier invoices to your master supplier list.
+
+<Steps>
+  <Step title="Import supplier master data">
+    One-time or periodic — upsert handles updates safely.
+    ```
+    PUT /api/suppliers/batch-upsert
+    ```
+  </Step>
+  <Step title="Query suppliers to verify import">
+    Optional, but useful for confirming data loaded as expected.
+    ```
+    GET /api/suppliers
+    ```
+  </Step>
+  <Step title="Match an incoming supplier against master data">
+    ```
+    POST /api/suppliers/match
+    ```
+  </Step>
+</Steps>
+
+Result: Ranked list of potential suppliers with confidence scores.
+
+---
+
+### Workflow B: invoice line-item matching (legacy)
+
+You want to match invoice line items to purchase orders or receipts.
+
+<Steps>
+  <Step title="No import required">
+    Provide invoice line items and external data (PO, receipts) directly in the request body.
+  </Step>
+  <Step title="Match line items">
+    ```
+    POST /api/legacy/matching/invoice-line-item
+    ```
+  </Step>
+</Steps>
+
+Result: Matched line items with detailed options and AI-assisted suggestions (if enabled).
+
+---
+
+### Workflow C: address matching (entity matching)
+
+You want to match delivery addresses to your master address list.
+
+<Steps>
+  <Step title="Import address master data">
+    Skip this step if address data is already imported.
+    ```
+    PUT /api/addresses/batch-upsert
+    ```
+  </Step>
+  <Step title="Match an incoming address">
+    ```
+    POST /api/addresses/match
+    ```
+  </Step>
+</Steps>
+
+Result: Ranked list of potential addresses with confidence scores.
+
+---
+
+## When to use import vs. query vs. match
+
+| Scenario | Operation(s) |
+|----------|--------------|
+| You're setting up the platform for the first time | **Import** master data first, then match against it |
+| You need to look up a supplier you know exists | **Query** to retrieve it directly |
+| You have new supplier data to integrate | **Import** the new data, then **Match** incoming invoices against it |
+| Your master data changes frequently | Keep importing updates; queries always reflect the latest |
+| You're matching line items to external documents | **Match** directly; no import needed |
+| You want to verify import succeeded | **Query** the data you imported |
+
+---
+
+## Key principles
+
+**1. Import is optional**
+Not all workflows require storing data in Spectrum Suite. Line-item matching, for example, works with document data provided in the request.
+
+**2. Matching is built on candidates**
+Before scoring, the matching engine shortlists candidates using key identifiers (company number, IBAN, postcode, etc.). This two-stage approach ensures accuracy and performance.
+
+**3. Queries are flexible**
+Once data is imported, you can query it any time—filtered, paginated, or as a single entity lookup.
+
+**4. Scores are contextual**
+Confidence scores (0–1) reflect how well data matches. Scores depend on data quality, field weights, and which matching stage returned the result.
+
+---
+
+## Next steps
+
+- **[Importing and querying data](/api-guide/importing-and-querying-data)** - Detailed guide to import and retrieve entities
+- **[Matching business entities](/api-guide/matching-business-entities)** - Supplier, Customer, Business Unit, and Address matching
+- **[Matching line items (legacy)](/api-guide/matching-line-items-legacy)** - Invoice line-item matching with external data

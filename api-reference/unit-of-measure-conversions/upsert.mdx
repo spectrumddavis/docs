@@ -1,0 +1,23 @@
+---
+title: 'Batch upsert unit of measure conversions'
+openapi: 'api-reference/openapi.json PUT /unit-of-measure-conversions/batch-upsert'
+---
+
+Imports or updates unit of measure conversions in bulk using the standard [batch upsert pattern](/api-reference/common-batch-upsert).
+
+**Endpoint:** `PUT /api/unit-of-measure-conversions/batch-upsert`
+
+---
+
+## Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sourceSystem` | string | Yes | Name of the source system |
+| `sourceSystemId` | string | Yes | Unique identifier in the source system |
+| `businessUnitId` | string | Yes | ID of the owning business unit |
+| `productCode` | string | No | Product this conversion applies to (omit for a global conversion) |
+| `unitFrom` | string | No | Source unit of measure (e.g. `CS`, `KG`) |
+| `unitTo` | string | No | Target unit of measure (e.g. `EA`, `G`) |
+| `conversionFactor` | decimal | No | Multiplier or divisor when converting between units |
+| `conversionType` | string | No | Conversion direction: `"Multiply"` or `"Divide"` |

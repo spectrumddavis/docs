@@ -1,0 +1,70 @@
+---
+title: "Matching line items (legacy)"
+description: "Match invoice line items against external data using the legacy assistive matching service"
+---
+
+The legacy **Assistive Matching** service matches invoice line items against external data sources to find corresponding matches. Unlike entity matching, **no import is required**—you provide the document data and external items in the request, and the service returns matched results.
+
+<Warning>
+Assistive Matching is a legacy endpoint inherited from the previous system. It offers extensive configuration options but is complex. The platform roadmap includes simplifying and modernising this functionality. For new integrations, expect eventual migration to a new line-item matching experience.
+</Warning>
+
+---
+
+## When to use it
+
+Assistive Matching is the right tool when:
+
+- You are processing invoice line items and need to match them to purchase order lines or receipt lines
+- Your external data is provided per-request rather than pre-imported into Spectrum Suite
+- You need to handle **split shipments** (one invoice line matching multiple PO lines) or **consolidated invoices** (multiple invoice lines matching one PO line)
+- You need tolerance-based matching to accommodate minor quantity or price variances
+
+If you need to match business entities such as suppliers, customers, or addresses, use [Matching business entities](/api-guide/matching-business-entities) instead.
+
+---
+
+## How it works
+
+You send a single `POST` request containing three things:
+
+1. **Document items** — the invoice or document lines you want to match
+2. **External items** — the data to match against (typically purchase order lines or receipt lines)
+3. **Options** — which matching strategies to use and how strict to be
+
+The service works through your chosen matching strategies in priority order. When a match is found, it stops (unless you ask it to continue). It returns each document item alongside any matches found and the strategy that produced them.
+
+The service does **not** persist data — everything must be provided in the request body.
+
+---
+
+## Matching strategies
+
+The service supports over 20 matching strategies, ranging from simple amount-based matching (`QuantityAndUnitPrice`) to description-based matching (`ArticleTextAndLineTotal`) and AI-assisted matching. You choose which strategies to enable and in what order.
+
+**Consolidated matching** is a more advanced capability that handles real-world complexity: it groups and sums multiple document or external items before attempting a match. This is how you handle split shipments or consolidated invoices where a simple line-by-line comparison would fail.
+
+For the full list of strategies, configuration options, field definitions, and response structure, see the [Match invoice line items (legacy)](/api-reference/invoice-line-items/match).
+
+---
+
+## Roadmap
+
+The platform intends to modernise line-item matching in future releases. Planned improvements include:
+
+- Persistent external line-item data (no more providing datasets in each request)
+- Simplified, intuitive matching configuration
+- Better AI integration
+- Performance optimisations
+
+Expect an eventual migration path from this legacy endpoint to a new, streamlined experience.
+
+---
+
+## Next steps
+
+- **[Match invoice line items (legacy)](/api-reference/invoice-line-items/match)** — Full endpoint reference: field definitions, all matching modes, configuration options, and response structure
+- **[Matching business entities](/api-guide/matching-business-entities)** — Entity matching for suppliers, customers, addresses
+- **[Importing and querying data](/api-guide/importing-and-querying-data)** — Manage your master data
+
+---

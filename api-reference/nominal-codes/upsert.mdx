@@ -1,0 +1,20 @@
+---
+title: 'Batch upsert nominal codes'
+openapi: 'api-reference/openapi.json PUT /nominal-codes/batch-upsert'
+---
+
+Imports or updates nominal codes in bulk using the standard [batch upsert pattern](/api-reference/common-batch-upsert).
+
+**Endpoint:** `PUT /api/nominal-codes/batch-upsert`
+
+---
+
+## Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sourceSystem` | string | Yes | Name of the source system (e.g. `"Sage"`) |
+| `sourceSystemId` | string | Yes | Unique identifier in the source system |
+| `businessUnitId` | string | Yes | ID of the owning business unit |
+| `code` | string | No | Nominal code value (e.g. `"7100"`) |
+| `description` | string | No | Human-readable description |

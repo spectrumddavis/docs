@@ -1,33 +1,141 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: 'API reference'
+description: 'Complete Spectrum Suite API reference and endpoint documentation'
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+## Overview
 
-## Welcome
+The Spectrum Suite API is a RESTful interface for data matching, entity reconciliation, and batch data operations. All endpoints require **Bearer token authentication**. Most endpoints also require the **X-Tenant-Id** header for tenant isolation — exceptions are noted on individual endpoint pages.
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+**Base URLs:**
+- Production: `https://spectrumsuite.azurewebsites.net/api`
+- Development: `https://spectrumsuite-dev.azurewebsites.net/api`
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+---
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API requests require:
+
+1. **Bearer Token** - JWT from OAuth 2.0 authentication (see [Authentication](/getting-started/authentication))
+2. **X-Tenant-Id Header** - Numeric tenant identifier (e.g., `1`, `2`, `42`) — required for tenant-scoped endpoints; stateless endpoints (validation, legacy matching) do not require it
+
+**Example request:**
+```bash
+curl -X GET "https://spectrumsuite.azurewebsites.net/api/suppliers" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-Tenant-Id: 1"
+```
+
+---
+
+## API structure
+
+The API is organised around three core areas:
+
+### Data management
+Import, query, and retrieve entities:
+- **Batch upsert** (`PUT /{entity}/batch-upsert`) - Create or update records in bulk
+- **Query paginated** (`GET /{entity}`) - Retrieve entities with cursor-based pagination
+- **Get by ID** (`GET /{entity}/{id}`) - Retrieve a single entity
+
+**Supported entities:** Suppliers, Customers, Business Units, Addresses, Purchase Orders, Receipts, and more.
+
+### Entity matching
+Find best matches in master data:
+- **Match endpoint** (`POST /{entity}/match`) - Compare incoming data against master records
+- Returns ranked list with confidence scores (0–1)
+- Supports multiple matching strategies (Fast, Best, All)
+
+**Supported entities:** Suppliers, Customers, Business Units, Addresses
+
+### Assistive matching (legacy)
+Match invoice line items without persistence:
+- **Match line items** (`POST /api/legacy/matching/invoice-line-item`) - Complex line-item matching with configurable tolerances
+
+<Note>
+  **Not yet available:** `POST /api/invoice-line-items/match` — a tenant-aware version of line-item matching is planned but currently returns **HTTP 501 Not Implemented**. Use the legacy endpoint above in the meantime.
+</Note>
+
+---
+
+## Error codes
+
+All endpoints use standard HTTP status codes and a consistent error envelope. Common codes:
+
+| Code | Meaning |
+|------|---------|
+| 200  | Success |
+| 400  | Bad request (validation error) |
+| 401  | Missing or invalid bearer token |
+| 403  | Forbidden (not authorised for this tenant) |
+| 404  | Not found (entity does not exist) |
+| 500  | Internal server error |
+| 501  | Not implemented (endpoint exists but is not yet available) |
+
+All error responses follow this format:
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
+{
+  "type": "https://www.rfc-editor.org/rfc/rfc9110#name-400-bad-request",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "fieldName": ["Error message"]
   }
-]
+}
 ```
+
+---
+
+## Response format
+
+All API responses follow a consistent envelope format:
+
+**Success (200 OK):**
+```json
+{
+  "data": {
+    "results": [...],
+    "nextCursor": 123,
+    "hasNextPage": true
+  }
+}
+```
+
+**Error (4xx/5xx):**
+```json
+{
+  "type": "https://www.rfc-editor.org/rfc/rfc9110#name-400-bad-request",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "fieldName": ["Error message"]
+  }
+}
+```
+
+---
+
+## Common patterns
+
+Most endpoints follow one of three patterns. Each is documented in full in the sidebar under **Common Patterns**.
+
+### [Paginated query](/api-reference/common-paginated-query)
+`GET /api/{entity}` — Returns a cursor-paginated list of records. Accepts `cursor` and `pageSize` parameters; responds with `results`, `nextCursor`, `hasNextPage`, and `returned`.
+
+### [Get single record](/api-reference/common-get-single-record)
+`GET /api/{entity}/{id}` — Retrieves a single record by its integer ID. Returns 404 with a structured problem detail if the record does not exist.
+
+### [Batch upsert](/api-reference/common-batch-upsert)
+`PUT /api/{entity}/batch-upsert` — Accepts a JSON array and creates or updates each record based on `sourceSystem` + `sourceSystemId`. Returns an `ImportSummary` with counts and per-record failure details.
+
+---
+
+## Next steps
+
+- **[Addresses](/api-reference/addresses/query)** — Import and match addresses
+- **[Business Units](/api-reference/business-units/query)** — Import and match business units
+- **[Customers](/api-reference/customers/query)** — Import and match customers
+- **[Suppliers](/api-reference/suppliers/query)** — Import and match suppliers
+- **[Invoice Line Items](/api-reference/invoice-line-items/validate)** — Validate and match invoice line items

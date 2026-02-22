@@ -1,0 +1,87 @@
+---
+title: 'Validate invoice line item'
+openapi: 'api-reference/openapi.json POST /invoice-line-items/validate'
+---
+
+## Overview
+
+Validates a single invoice line item against configurable business rules. Returns a list of validation issues, or an empty list if all checks pass.
+
+**HTTP**: `POST /invoice-line-items/validate`
+
+This endpoint requires a `Bearer` token but not `X-Tenant-Id` — validation is stateless and no data is persisted.
+
+---
+
+## Request example
+
+```bash
+curl -X POST "https://spectrumsuite.azurewebsites.net/api/invoice-line-items/validate" \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoiceLineItem": {
+      "lineNumber": 1,
+      "stockCode": "WIDGET-001",
+      "stockDescription": "Blue Widget",
+      "quantity": 10,
+      "unitPrice": 25.00,
+      "lineTotal": 250.00
+    },
+    "options": {}
+  }'
+```
+
+---
+
+## Response example
+
+```json
+{
+  "data": {
+    "validationIssues": []
+  }
+}
+```
+
+The `validationIssues` array contains any issues found. Each issue has a `validationSeverity` (`"Error"` or `"Warning"`) and a `validationMessage`.
+
+---
+
+## Invoice line item fields
+
+All fields are optional. Provide the fields relevant to the checks you want to perform.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lineNumber` | `integer` | Line number within the invoice. |
+| `stockCode` | `string` | Your internal stock or product code. |
+| `stockExternalCode` | `string` | Supplier's stock code. |
+| `stockDescription` | `string` | Human-readable description of the line item. |
+| `quantity` | `decimal` | Quantity invoiced. |
+| `quantityUnit` | `string` | Unit of measure for the quantity (e.g., `EA`, `KG`). |
+| `unitPrice` | `decimal` | Price per pricing unit. |
+| `pricingUnit` | `integer` | Quantity that `unitPrice` applies to (e.g., `1`, `100`). |
+| `discount1` | `decimal` | First discount amount. |
+| `discount2` | `decimal` | Second discount amount. |
+| `discount3` | `decimal` | Third discount amount. |
+| `taxAmount` | `decimal` | Tax amount for the line. |
+| `taxRate` | `decimal` | Tax rate as a decimal (e.g., `0.20` for 20%). |
+| `lineTotal` | `decimal` | Calculated total value of the line. |
+
+<Note>
+  No validation rules are currently enabled for invoice line items. The endpoint accepts a request and returns an empty `validationIssues` array. It exists to support future rule additions — you can integrate it now and benefit automatically when rules are released.
+</Note>
+
+---
+
+## Notes
+
+- Use [Validate invoice](/api-reference/invoices/validate) for whole-invoice validation.
+- For legacy line-item matching (not validation), see [Match invoice line items (legacy)](/api-reference/invoice-line-items/match).
+
+---
+
+## Error codes
+
+See [API Reference introduction](/api-reference/introduction#error-codes) for standard error codes and error envelope format.

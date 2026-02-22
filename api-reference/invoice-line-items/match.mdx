@@ -1,0 +1,428 @@
+---
+title: 'Match invoice line items (legacy)'
+description: 'Match invoice or credit note line items against purchase orders and goods receipt data'
+openapi: 'api-reference/openapi.json POST /legacy/matching/invoice-line-item'
+---
+
+<Warning>
+  This is the **legacy assistive matching endpoint**. A replacement endpoint (`POST /api/invoice-line-items/match`) is in development and will supersede this one when available. Until then, this endpoint is the recommended integration point for invoice line-item matching.
+</Warning>
+
+## Overview
+
+`POST /api/legacy/matching/invoice-line-item`
+
+Matches invoice or credit note line items against a set of external items (purchase order / goods receipt data) provided in the request body. The matching is **stateless and synchronous** — no data is persisted, and the response is returned in the same call.
+
+This endpoint is designed for AP workflows where you want to match invoice lines to open purchase order lines or delivery receipt lines, identifying the best candidates and flagging discrepancies.
+
+### Key characteristics
+
+- **Self-contained** — all data is passed in the request; no prior import to Spectrum Suite is required
+- **Multi-mode** — you configure which matching strategies to attempt (quantity, price, article number, etc.)
+- **Tolerant** — configurable tolerances allow for small differences in quantity, weight, unit price, and line total
+- **UOM-aware** — optional unit-of-measure conversion support handles mismatched quantity units
+
+---
+
+## Request
+
+```bash
+curl -X POST "https://spectrumsuite.azurewebsites.net/api/legacy/matching/invoice-line-item" \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "documentItems": [ ... ],
+    "dataSets": { "items": [ ... ] },
+    "options": { ... }
+  }'
+```
+
+### Request body
+
+```json
+{
+  "documentItems": [
+    {
+      "rowIndex": 0,
+      "businessUnitId": "BU001",
+      "supplierId": "SUPP-001",
+      "orderNumber": "PO-2025-001",
+      "lineNumber": 1,
+      "quantity": 100,
+      "weight": 0,
+      "articleNumber": "WIDGET-001",
+      "articleText": "Blue Widget 250g",
+      "unitOfMeasure": "EA",
+      "pricingUnit": 1,
+      "unitPrice": 25.00,
+      "lineTotal": 2500.00
+    }
+  ],
+  "dataSets": {
+    "items": [
+      {
+        "id": "RL-001",
+        "businessUnitId": "BU001",
+        "supplierId": "SUPP-001",
+        "orderNumber": "PO-2025-001",
+        "lineNumber": 1,
+        "receiptNumber": "GRN-2025-001",
+        "quantity": 100,
+        "weight": 0,
+        "articleNumber": "WIDGET-001",
+        "articleText": "Blue Widget 250g",
+        "unitOfMeasure": "EA",
+        "pricingUnit": 1,
+        "unitPrice": 25.00,
+        "lineTotal": 2500.00
+      }
+    ]
+  },
+  "options": {
+    "mode": "QuantityAndUnitPrice",
+    "continueSearchAfterMatch": false,
+    "filterMatchesByBusinessUnit": true,
+    "filterMatchesBySupplier": true,
+    "quantityToleranceType": "Amount",
+    "quantityTolerance": 0.01,
+    "unitPriceToleranceType": "Amount",
+    "unitPriceTolerance": 0.01,
+    "lineTotalToleranceType": "Amount",
+    "lineTotalTolerance": 0.01
+  }
+}
+```
+
+---
+
+## Document items
+
+`documentItems` is an array of invoice or credit note lines to be matched.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `rowIndex` | `integer` | A unique row identifier you assign. Returned in the response to correlate results. |
+| `businessUnitId` | `string` | Business unit identifier from your source system. Used to filter candidate external items. |
+| `supplierId` | `string` | Supplier identifier from your source system. Used to filter candidate external items. |
+| `orderNumber` | `string` | Purchase order reference. Used in some matching modes and for filtering. |
+| `lineNumber` | `integer` | Line number within the order. Used in `LineNumberAndQuantity` mode. |
+| `deliveryNoteNumber` | `string` | Delivery note reference. Used when `filterMatchesByDeliveryNote` is enabled. |
+| `quantity` | `decimal` | **Required for most modes.** Invoice quantity. |
+| `weight` | `decimal` | Weight. Used in weight-based matching modes. |
+| `articleNumber` | `string` | Article or product number. Used in article number matching modes. |
+| `articleText` | `string` | Free-text article description. Used in article text matching modes. |
+| `unitOfMeasure` | `string` | Unit of measure (e.g., `EA`, `KG`, `CS`). Required for UOM conversion modes. |
+| `pricingUnit` | `decimal` | Pricing unit — the quantity that `unitPrice` applies to (e.g., `1`, `100`). |
+| `unitPrice` | `decimal` | **Required for price-based modes.** Price per `pricingUnit`. |
+| `discountPercent` | `decimal` | Discount percentage (primary). |
+| `discountPercent2` | `decimal` | Second discount percentage (cascading). |
+| `discountPercent3` | `decimal` | Third discount percentage (cascading). |
+| `discountAmount` | `decimal` | Fixed discount amount. |
+| `additionalChargePercent` | `decimal` | Additional charge percentage. |
+| `additionalChargeAmount` | `decimal` | Fixed additional charge amount. |
+| `lineTotal` | `decimal` | **Required for line total matching modes.** Calculated line total. |
+| `originalItem` | `any` | Passthrough — any object you include here is returned unchanged in the response. Useful for correlating results with your own data model. |
+
+---
+
+## Data sets
+
+`dataSets` is a dictionary of named data sets provided to the matching engine. Pass all external items (purchase order lines joined to goods receipt lines) that should be considered as match candidates.
+
+### `items` (required)
+
+The key `items` (or equivalently `externalItems`) contains the pool of external items to match against.
+
+```json
+{
+  "dataSets": {
+    "items": [ ... ]
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | **Required.** Unique identifier for this external item — returned in match results. Typically your receipt line ID. |
+| `businessUnitId` | `string` | Business unit identifier. Used for filtering when `filterMatchesByBusinessUnit` is enabled. |
+| `supplierId` | `string` | Supplier identifier. Used for filtering when `filterMatchesBySupplier` is enabled. |
+| `orderNumber` | `string` | Purchase order reference. |
+| `lineNumber` | `integer` | PO line number. |
+| `deliveryNoteNumber` | `string` | Delivery note reference. Used when `filterMatchesByDeliveryNote` is enabled. |
+| `receiptNumber` | `string` | Goods receipt number. |
+| `quantity` | `decimal` | Quantity recorded on the receipt line. |
+| `weight` | `decimal` | Weight. |
+| `articleNumber` | `string` | Your article or product number. |
+| `externalArticleNumber` | `string` | Supplier's article number, if different. |
+| `articleText` | `string` | Free-text article description. |
+| `unitOfMeasure` | `string` | Unit of measure (e.g., `EA`, `KG`). |
+| `pricingUnit` | `decimal` | Pricing unit — the quantity that `unitPrice` applies to (e.g., `1`, `100`). |
+| `unitPrice` | `decimal` | Unit price on the purchase order line. |
+| `lineTotal` | `decimal` | Total value of the receipt line. |
+
+### `uomConversions` (optional)
+
+The key `uomConversions` (or equivalently `conversions`) provides unit-of-measure conversion rules. Required when using `QuantityAndUnitPriceWithUOMConversions` mode or when `allowBlindUOMConversions` is enabled.
+
+```json
+{
+  "dataSets": {
+    "uomConversions": [
+      {
+        "businessUnitId": "BU001",
+        "articleNumber": "WIDGET-001",
+        "unitFrom": "CS",
+        "unitTo": "EA",
+        "conversionType": "Multiply",
+        "conversionFactor": 12
+      }
+    ]
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `businessUnitId` | `string` | Business unit this conversion applies to. |
+| `articleNumber` | `string` | Article number this conversion applies to. |
+| `unitFrom` | `string` | Source unit (e.g., `CS` for cases). |
+| `unitTo` | `string` | Target unit (e.g., `EA` for each). |
+| `conversionType` | `string` | Conversion direction: `"Multiply"` or `"Divide"` |
+| `conversionFactor` | `decimal` | The conversion multiplier (e.g., `12` for 1 case = 12 each). |
+
+---
+
+## Matching options
+
+All options are optional and have sensible defaults. Pass only what you need to override.
+
+### Matching mode
+
+`mode` is a [flags enum](https://learn.microsoft.com/en-us/dotnet/api/system.flagsattribute) — pass a comma-separated string of mode names to enable multiple modes. The engine attempts each enabled mode in turn. By default only `QuantityAndUnitPrice` is enabled.
+
+| Value | Name | Description |
+|-------|------|-------------|
+| `1` | `LineNumberAndQuantity` | Match on PO line number and quantity. |
+| `2` | `ArticleNumberAndQuantityAndUnitPrice` | Match on article number, quantity, and unit price. |
+| `4` | `ArticleTextAndQuantityAndUnitPrice` | Match on article text (fuzzy), quantity, and unit price. |
+| `8` | `QuantityAndWeightAndUnitPrice` | Match on quantity, weight, and unit price. |
+| `16` | `ArticleTextAndQuantityAndWeight` | Match on article text, quantity, and weight. |
+| `32` | `QuantityAndUnitPrice` | (**Default**) Match on quantity and unit price only. |
+| `64` | `QuantityAndUnitPriceWithUOMConversions` | As above, but applies UOM conversions if units differ. |
+| `128` | `ArticleNumberAndLineTotal` | Match on article number and line total. |
+| `256` | `ArticleTextAndLineTotal` | Match on article text (fuzzy) and line total. |
+| `512` | `QuantityAndUnitPriceWithConsolidatedDocumentAndExternalItems` | Consolidates both sides before matching. |
+| `1024` | `QuantityAndUnitPriceWithConsolidatedDocumentItems` | Consolidates document items before matching. |
+| `2048` | `QuantityAndUnitPriceWithConsolidatedExternalItems` | Consolidates external items before matching. |
+| `4096` | `LineTotalWithConsolidatedDocumentAndExternalItems` | Line total matching with consolidation on both sides. |
+| `8192` | `LineTotalWithConsolidatedDocumentItems` | Line total matching with document consolidation. |
+| `16384` | `LineTotalWithConsolidatedExternalItems` | Line total matching with external item consolidation. |
+| `32768` | `ArticleNumberAndUnitPrice` | Match on article number and unit price. |
+| `65536` | `ArticleTextAndUnitPrice` | Match on article text (fuzzy) and unit price. |
+| `131072` | `ArticleTextAndQuantity` | Match on article text (fuzzy) and quantity. |
+| `262144` | `ArticleNumber` | Match on article number alone. |
+| `524288` | `ArticleText` | Match on article text (fuzzy) alone. |
+| `1048576` | `LineTotal` | Match on line total alone. |
+| `2097152` | `UnitPrice` | Match on unit price alone. |
+| `4194304` | `Quantity` | Match on quantity alone. |
+| `8388608` | `AI` | AI-assisted matching. Requires `OPENAI_API_KEY` to be configured server-side. |
+
+**Combining modes:** Pass a comma-separated string of mode names. For example, to enable both `QuantityAndUnitPrice` and `ArticleNumberAndQuantityAndUnitPrice`, pass `mode: "QuantityAndUnitPrice, ArticleNumberAndQuantityAndUnitPrice"`.
+
+### General options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `mode` | `string` | `"QuantityAndUnitPrice"` | Matching mode flags (see above). Combine multiple modes with a comma-separated string. |
+| `continueSearchAfterMatch` | `boolean` | `false` | If `true`, continues evaluating remaining modes even after a match is found for a document item. |
+| `filterMatchesByBusinessUnit` | `boolean` | `true` | Restricts candidate external items to those with a matching `businessUnitId`. |
+| `filterMatchesBySupplier` | `boolean` | `true` | Restricts candidate external items to those with a matching `supplierId`. |
+| `filterMatchesByDeliveryNote` | `boolean` | `false` | Restricts candidates to those with a matching `deliveryNoteNumber`. |
+| `setMissingUnitOfMeasure` | `boolean` | `false` | Attempts to extract a UOM from the `articleText` if `unitOfMeasure` is not set. |
+| `setMissingPricingUnit` | `boolean` | `false` | Attempts to extract a pricing unit from the `articleText` if `pricingUnit` is not set. |
+| `extractArticleNumberFromArticleText` | `boolean` | `false` | Attempts to extract an article number from `articleText` if `articleNumber` is not set. |
+| `allowBlindUOMConversions` | `boolean` | `false` | When a UOM conversion rule isn't found in the table, attempts a best-effort conversion anyway. |
+| `useQuantityFromExternalForLineTotalMatches` | `boolean` | `false` | When matching on line total, substitutes the external item's quantity into the document item for comparison. |
+| `minimumArticleTextSimilarityScore` | `number` | `0.8` | Minimum fuzzy similarity score (0–1) required for an article text match to be accepted. |
+
+### Tolerance options
+
+Tolerances allow small numeric differences to still register as matches.
+
+**`ToleranceType`:** `"Amount"` (fixed ±) or `"Percentage"` (±% of the document item value)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `quantityToleranceType` | `string` | `"Amount"` | Tolerance type for quantity comparison. |
+| `quantityTolerance` | `decimal` | `0.01` | Allowed quantity variance. Amount: ±0.01 units. Percentage: e.g., `5` = ±5%. |
+| `weightToleranceType` | `string` | `"Amount"` | Tolerance type for weight comparison. |
+| `weightTolerance` | `decimal` | `0.01` | Allowed weight variance. |
+| `unitPriceToleranceType` | `string` | `"Amount"` | Tolerance type for unit price comparison. |
+| `unitPriceTolerance` | `decimal` | `0.01` | Allowed unit price variance. |
+| `lineTotalToleranceType` | `string` | `"Amount"` | Tolerance type for line total comparison. |
+| `lineTotalTolerance` | `decimal` | `0.01` | Allowed line total variance. |
+
+**Percentage tolerance example:** Setting `quantityToleranceType: "Percentage"` and `quantityTolerance: 5` means an invoice quantity of 100 will match an external item quantity anywhere between 95 and 105.
+
+---
+
+## Response
+
+```json
+{
+  "multiMatchingResults": [
+    {
+      "rowIndex": 0,
+      "item": {
+        "rowIndex": 0,
+        "businessUnitId": "BU001",
+        "supplierId": "SUPP-001",
+        "orderNumber": "PO-2025-001",
+        "quantity": 100,
+        "unitPrice": 25.00,
+        "lineTotal": 2500.00
+      },
+      "results": [
+        {
+          "mode": "QuantityAndUnitPrice",
+          "item": {
+            "rowIndex": 0,
+            "quantity": 100,
+            "unitPrice": 25.00,
+            "lineTotal": 2500.00
+          },
+          "externalItem": {
+            "id": "RL-001",
+            "businessUnitId": "BU001",
+            "supplierId": "SUPP-001",
+            "orderNumber": "PO-2025-001",
+            "receiptNumber": "GRN-2025-001",
+            "quantity": 100,
+            "unitPrice": 25.00,
+            "lineTotal": 2500.00
+          },
+          "changeStatus": "Add"
+        }
+      ]
+    }
+  ]
+}
+```
+
+<Note>
+  The legacy endpoint returns data directly (not wrapped in `{ "data": ... }` like other Spectrum Suite endpoints).
+</Note>
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `multiMatchingResults` | `array` | One entry per document item submitted. |
+| `multiMatchingResults[].rowIndex` | `integer` | The `rowIndex` from the document item. Use this to correlate results back to your input. |
+| `multiMatchingResults[].item` | `object` | The document item as processed (may differ from input if options like `setMissingUnitOfMeasure` were applied). |
+| `multiMatchingResults[].results` | `array` | The matches found for this document item. Empty array if no match was found. |
+| `multiMatchingResults[].results[].mode` | `string` | The matching mode that produced this result (see mode table above). |
+| `multiMatchingResults[].results[].item` | `object` | The (potentially adjusted) document item used for this specific match. |
+| `multiMatchingResults[].results[].externalItem` | `object` | The matched external item from your `dataSets.items`. |
+| `multiMatchingResults[].results[].changeStatus` | `string` | `"NoChange"`, `"Add"`, `"Update"`, or `"Delete"` |
+
+### Change status
+
+| Value | Meaning |
+|-------|---------|
+| `"NoChange"` | The match is consistent with a prior state (no action needed). |
+| `"Add"` | New match found — this document item has been matched for the first time. |
+| `"Update"` | The match has changed from a previous result. |
+| `"Delete"` | This match should be removed (previously matched, no longer qualifies). |
+
+### No match
+
+If a document item has no matches, its `results` array is empty:
+
+```json
+{
+  "rowIndex": 1,
+  "item": { ... },
+  "results": []
+}
+```
+
+---
+
+## Common configurations
+
+### Standard quantity and price matching (default)
+
+```json
+{
+  "options": {
+    "mode": "QuantityAndUnitPrice",
+    "quantityToleranceType": "Amount",
+    "quantityTolerance": 0.01,
+    "unitPriceToleranceType": "Amount",
+    "unitPriceTolerance": 0.01
+  }
+}
+```
+
+### Article number matching with fallback to quantity/price
+
+`"QuantityAndUnitPrice, ArticleNumberAndQuantityAndUnitPrice"` — the engine attempts each mode in the order listed; because `continueSearchAfterMatch` defaults to `false`, it stops at the first match found.
+
+```json
+{
+  "options": {
+    "mode": "QuantityAndUnitPrice, ArticleNumberAndQuantityAndUnitPrice",
+    "continueSearchAfterMatch": false
+  }
+}
+```
+
+### Percentage tolerance on quantities (±5%)
+
+```json
+{
+  "options": {
+    "mode": "QuantityAndUnitPrice",
+    "quantityToleranceType": "Percentage",
+    "quantityTolerance": 5
+  }
+}
+```
+
+### UOM conversion matching
+
+When invoice and PO use different units (e.g., invoice is in cases, PO is in each):
+
+```json
+{
+  "options": {
+    "mode": "QuantityAndUnitPriceWithUOMConversions"
+  },
+  "dataSets": {
+    "items": [ ... ],
+    "uomConversions": [
+      {
+        "businessUnitId": "BU001",
+        "articleNumber": "WIDGET-001",
+        "unitFrom": "CS",
+        "unitTo": "EA",
+        "conversionType": "Multiply",
+        "conversionFactor": 12
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Error codes
+
+| Code | Meaning |
+|------|---------|
+| `400` | Request body failed validation (missing required fields, malformed JSON). |
+| `500` | Internal server error — check logs for detail. |
+
+See [API Reference introduction](/api-reference/introduction#error-codes) for error envelope format.

@@ -1,0 +1,33 @@
+---
+title: 'Batch upsert customers'
+openapi: 'api-reference/openapi.json PUT /customers/batch-upsert'
+---
+
+Imports or updates customers in bulk using the standard [batch upsert pattern](/api-reference/common-batch-upsert).
+
+**Endpoint:** `PUT /api/customers/batch-upsert`
+
+---
+
+## Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sourceSystem` | string | Yes | Name of the source system (e.g. `"Sage"`) |
+| `sourceSystemId` | string | Yes | Unique identifier in the source system |
+| `businessUnitId` | string | Yes | ID of the owning business unit |
+| `name` | string | No | Customer display name |
+| `companyNumber` | string | No | Companies House number |
+| `vatRegistrationNumber` | string | No | VAT registration number |
+| `addressLine1` | string | No | Address line 1 |
+| `addressLine2` | string | No | Address line 2 |
+| `postcode` | string | No | Postcode |
+| `city` | string | No | City |
+| `county` | string | No | County |
+| `bankAccountNumber` | string | No | Bank account number |
+| `bankAccountSortCode` | string | No | Sort code |
+| `bankAccountIBAN` | string | No | IBAN |
+| `bankAccountSWIFT` | string | No | SWIFT/BIC code |
+| `telephoneNumber` | string | No | Telephone number |
+| `faxNumber` | string | No | Fax number |
+| `emailAddress` | string | No | Email address |

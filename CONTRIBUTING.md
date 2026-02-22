@@ -1,33 +1,34 @@
-> **Customize this file**: Tailor this template to your project by noting specific contribution types you're looking for, adding a Code of Conduct, or adjusting the writing guidelines to match your style.
+# Contributing to Spectrum Suite Docs
 
-# Contribute to the documentation
+## Local development
 
-Thank you for your interest in contributing to our documentation! This guide will help you get started.
-
-## How to contribute
-
-### Option 1: Edit directly on GitHub
-
-1. Navigate to the page you want to edit
-2. Click the "Edit this file" button (the pencil icon)
-3. Make your changes and submit a pull request
-
-### Option 2: Local development
-
-1. Fork and clone this repository
-2. Install the Mintlify CLI: `npm i -g mint`
-3. Create a branch for your changes
-4. Make changes
-5. Navigate to the docs directory and run `mint dev`
-6. Preview your changes at `http://localhost:3000`
-7. Commit your changes and submit a pull request
-
-For more details on local development, see our [development guide](development.mdx).
+1. Install the Mintlify CLI: `npm i -g mint`
+2. Clone this repository
+3. Create a branch: `git checkout -b your-branch-name`
+4. Run `mint dev` and preview at `http://localhost:3000`
+5. Commit and open a pull request
 
 ## Writing guidelines
 
-- **Use active voice**: "Run the command" not "The command should be run"
-- **Address the reader directly**: Use "you" instead of "the user"
+See [AGENTS.md](AGENTS.md) for the full style guide, terminology, and content conventions.
+
+Key rules:
+- British English (en-GB): "authorise", "organise", "recognise"
+- Sentence case for all headings — not title case
+- Active voice and second person ("you")
+- **Bold** for UI elements, `code` for field names, commands, and paths
+- No filler words: "simply", "just", "easy"
+
+## Content boundaries
+
+| Section | What belongs here |
+|---|---|
+| `api-guide/` | Conceptual content — what it is, when to use it |
+| `api-reference/` | Field definitions, request/response shapes, enumerations |
+
+## Updating the OpenAPI spec
+
+Fetch a fresh spec from the dev API and replace `api-reference/openapi.json`. See `README.md` for the endpoint URL.
 - **Keep sentences concise**: Aim for one idea per sentence
 - **Lead with the goal**: Start instructions with what the user wants to accomplish
 - **Use consistent terminology**: Don't alternate between synonyms for the same concept

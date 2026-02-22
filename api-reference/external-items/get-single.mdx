@@ -1,0 +1,16 @@
+---
+title: 'Get single external item'
+openapi: 'api-reference/openapi.json GET /external-items/{id}'
+---
+
+Retrieves a single external item by its unique identifier using the standard [get single record](/api-reference/common-get-single-record) pattern.
+
+**Endpoint:** `GET /api/external-items/{id}`
+
+---
+
+## External item-specific notes
+
+- The `{id}` path parameter is the **receipt line ID** (`receiptLineId`) — the unique identifier of the underlying receipt line record. You can obtain this value from the [Query external items](/api-reference/external-items/query) response.
+- External items are **read-only** — they are derived from purchase order line and receipt line data.
+- See [Query external items](/api-reference/external-items/query) for context on what external items represent.

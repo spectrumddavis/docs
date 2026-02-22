@@ -1,0 +1,20 @@
+---
+title: 'Match business unit against master data'
+openapi: 'api-reference/openapi.json POST /business-units/match'
+---
+
+Matches a business unit against your tenant's master data. Returns a ranked list of candidates with confidence scores.
+
+**Endpoint:** `POST /api/business-units/match`
+
+For a conceptual overview of the matching algorithm, shortlisting stages, options (match method, confidence threshold, field weights, fuzzy matching), and result interpretation, see [Matching business entities](/api-guide/matching-business-entities).
+
+---
+
+## Required request fields
+
+The `businessUnit` object must include the following field. All other fields are optional — provide as many as you have to improve match accuracy.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `string` | The business unit name to match against. |

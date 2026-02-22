@@ -1,0 +1,14 @@
+---
+title: 'Query external items (paginated)'
+openapi: 'api-reference/openapi.json GET /external-items'
+---
+
+Returns external item records using the standard [paginated query](/api-reference/common-paginated-query) pattern. External items are a **read-only** aggregate view joining purchase order lines with receipt lines, providing a consolidated view of ordered, received, and invoiced quantities.
+
+**Endpoint:** `GET /api/external-items`
+
+---
+
+## External item-specific notes
+
+- External items are **read-only** — they cannot be imported directly. They are derived from [Query purchase order lines (paginated)](/api-reference/purchase-order-lines/query) and [Query receipt lines (paginated)](/api-reference/receipt-lines/query).

@@ -1,0 +1,95 @@
+---
+title: 'Validate invoice'
+openapi: 'api-reference/openapi.json POST /invoices/validate'
+---
+
+## Overview
+
+Validates an invoice against configurable business rules. Returns a list of validation issues found, or an empty list if the invoice passes all checks.
+
+**HTTP**: `POST /invoices/validate`
+
+This endpoint requires a `Bearer` token but not `X-Tenant-Id` — validation is stateless and no data is persisted.
+
+---
+
+## Request example
+
+```bash
+curl -X POST "https://spectrumsuite.azurewebsites.net/api/invoices/validate" \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoice": {
+      "reference": "INV-2025-001",
+      "totalNetAmount": 1000.00,
+      "totalTaxAmount": 200.00,
+      "totalGrossAmount": 1250.00,
+      "currency": "GBP"
+    },
+    "options": {
+      "validateTotals": true
+    }
+  }'
+```
+
+---
+
+## Response example
+
+```json
+{
+  "data": {
+    "validationIssues": [
+      {
+        "validationSeverity": "Error",
+        "validationMessage": "Total net amount + total tax amount does not equal total gross amount."
+      }
+    ]
+  }
+}
+```
+
+An empty `validationIssues` array means the invoice passed all validation checks. Each issue has a `validationSeverity` of `"Error"` or `"Warning"` and a `validationMessage` describing the problem.
+
+---
+
+## Invoice fields
+
+All fields are optional. Provide the fields relevant to the checks you want to perform.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `reference` | `string` | Invoice reference number. |
+| `date` | `string (datetime)` | Invoice date (ISO 8601). |
+| `dueDate` | `string (datetime)` | Payment due date (ISO 8601). |
+| `currency` | `string` | Currency code (e.g., `GBP`, `USD`, `EUR`). |
+| `valueOfGoods` | `decimal` | Net value of goods before charges and discounts. |
+| `additionalCharge1` | `decimal` | First additional charge amount. |
+| `additionalCharge2` | `decimal` | Second additional charge amount. |
+| `additionalCharge3` | `decimal` | Third additional charge amount. |
+| `discount1` | `decimal` | First discount amount. |
+| `discount2` | `decimal` | Second discount amount. |
+| `discount3` | `decimal` | Third discount amount. |
+| `totalNetAmount` | `decimal` | Total net amount of the invoice. |
+| `totalTaxAmount` | `decimal` | Total tax (VAT) amount. |
+| `totalGrossAmount` | `decimal` | Total gross amount (net + tax). |
+| `lineItems` | `array` | Invoice line items (see [Validate invoice line item](/api-reference/invoice-line-items/validate) for field details). |
+| `taxAnalysisItems` | `array` | Tax analysis breakdown by tax code. Each item: `code`, `description`, `netAmount`, `taxAmount`. |
+| `nominalAnalysisItems` | `array` | Nominal code breakdown. Each item: `code`, `description`, `netAmount`. |
+
+---
+
+## Options
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `validateAnalysisItems` | `boolean` | `false` | Run validation rules against analysis items on the invoice. |
+| `validateLineItems` | `boolean` | `false` | Run validation rules against line items on the invoice. |
+| `validateTotals` | `boolean` | `false` | Run validation rules against invoice totals. |
+
+---
+
+## Error codes
+
+See [API Reference introduction](/api-reference/introduction#error-codes) for standard error codes and error envelope format.

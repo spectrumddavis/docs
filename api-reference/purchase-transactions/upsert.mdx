@@ -1,0 +1,21 @@
+---
+title: 'Batch upsert purchase transactions'
+openapi: 'api-reference/openapi.json PUT /purchase-transactions/batch-upsert'
+---
+
+Imports or updates purchase transactions in bulk using the standard [batch upsert pattern](/api-reference/common-batch-upsert).
+
+**Endpoint:** `PUT /api/purchase-transactions/batch-upsert`
+
+---
+
+## Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sourceSystem` | string | Yes | Name of the source system (e.g. `"Sage"`) |
+| `sourceSystemId` | string | Yes | Unique identifier in the source system |
+| `supplierId` | string | Yes | ID of the associated supplier |
+| `businessUnitId` | string | Yes | ID of the owning business unit |
+| `reference` | string | No | Transaction reference (e.g. invoice number) |
+| `type` | string | No | Transaction type (e.g. `Invoice`, `Credit Note`, `Payment`) |

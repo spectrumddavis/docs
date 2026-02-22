@@ -1,0 +1,21 @@
+---
+title: 'Batch upsert purchase tax codes'
+openapi: 'api-reference/openapi.json PUT /purchase-tax-codes/batch-upsert'
+---
+
+Imports or updates purchase tax codes in bulk using the standard [batch upsert pattern](/api-reference/common-batch-upsert).
+
+**Endpoint:** `PUT /api/purchase-tax-codes/batch-upsert`
+
+---
+
+## Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sourceSystem` | string | Yes | Name of the source system (e.g. `"Sage"`) |
+| `sourceSystemId` | string | Yes | Unique identifier in the source system |
+| `businessUnitId` | string | Yes | ID of the owning business unit |
+| `code` | string | No | Tax code identifier (e.g. `"T1"`) |
+| `description` | string | No | Human-readable description |
+| `rate` | decimal | No | Tax rate as a decimal (e.g. `0.20` for 20%) |

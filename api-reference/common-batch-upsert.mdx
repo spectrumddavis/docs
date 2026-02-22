@@ -1,0 +1,129 @@
+---
+title: 'Batch upsert'
+description: 'Standard pattern for bulk creating or updating records'
+---
+
+import RequiredHeadersWithContentType from '/snippets/required-headers-with-content-type.mdx'
+
+## Overview
+
+All importable entities in Spectrum Suite support a **batch upsert** operation — a single request that creates or updates records in bulk. If a record already exists (matched by source system and ID), it is updated. If it does not exist, it is created.
+
+Batches are processed in a single database operation for efficiency. If some records fail validation, the import continues — failures are reported alongside successful records in the response.
+
+---
+
+## Request
+
+**Method:** `PUT /api/{entity}/batch-upsert`
+
+<RequiredHeadersWithContentType />
+
+### Request body
+
+The request body is a **JSON array** of entity objects. Batches must contain between 1 and 10,000 records. Requests with an empty array or more than 10,000 records will be rejected with a 400 error.
+
+```json Request body
+[
+  {
+    "businessUnitId": "BU001",
+    "sourceSystem": "SAP",
+    "sourceSystemId": "SUPP-001",
+    "name": "Acme Supplies Inc",
+    "companyNumber": "12345678",
+    "vatRegistrationNumber": "GB123456789"
+  },
+  {
+    "businessUnitId": "BU001",
+    "sourceSystem": "SAP",
+    "sourceSystemId": "SUPP-002",
+    "name": "Global Widgets Ltd",
+    "companyNumber": "87654321"
+  }
+]
+```
+
+---
+
+## Response
+
+Returns a summary of the import, including success/failure counts and details of any failures:
+
+```json Response
+{
+  "data": {
+    "totalCount": 100,
+    "successCount": 98,
+    "failedCount": 2,
+    "failures": [
+      {
+        "sourceSystem": "SAP",
+        "sourceSystemId": "SUPP-099",
+        "field": "name",
+        "code": "required",
+        "reason": "Name is required.",
+        "index": 98
+      },
+      {
+        "sourceSystem": "SAP",
+        "sourceSystemId": "SUPP-100",
+        "field": "businessUnitId",
+        "code": "invalid_reference",
+        "reason": "Business unit with ID 999 does not exist.",
+        "index": 99
+      }
+    ]
+  },
+  "message": null
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data.totalCount` | `integer` | Total records submitted |
+| `data.successCount` | `integer` | Records successfully created or updated |
+| `data.failedCount` | `integer` | Records that failed validation or processing |
+| `data.failures` | `array` | Details of each failure |
+| `data.failures[].sourceSystem` | `string` | Source system of the failed record |
+| `data.failures[].sourceSystemId` | `string` | Source system ID of the failed record |
+| `data.failures[].field` | `string \| null` | The field that caused the failure, if applicable |
+| `data.failures[].code` | `string \| null` | Machine-readable failure code |
+| `data.failures[].reason` | `string` | Human-readable description of the failure |
+| `data.failures[].index` | `integer \| null` | Zero-based index in the request array |
+
+---
+
+## Behaviour notes
+
+- **Partial success is normal.** A `200` response does not mean all records succeeded — always check `failedCount` and `failures`.
+- **Upsert logic:** Records are matched by `sourceSystem` + `sourceSystemId`. If a matching record exists, it is updated. Otherwise, it is created.
+- **No duplicate keys within a batch.** All records in a single request must have unique `sourceSystem` + `sourceSystemId` combinations. A batch containing duplicates is rejected with a `400` before any records are processed.
+- **Required fields vary by entity.** Each entity has its own required fields — see the entity-specific page for details.
+
+---
+
+## Error codes
+
+A `400` response is returned when the request body itself is invalid (e.g., not a JSON array, or fails schema validation before processing begins):
+
+```json 400 Bad Request
+{
+  "type": "https://www.rfc-editor.org/rfc/rfc9110#name-400-bad-request",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "$": ["The request body must be a JSON array."]
+  }
+}
+```
+
+| Code | Meaning |
+|------|---------|
+| `400` | Request body is invalid (not processed) |
+| `401` | Missing or invalid bearer token |
+| `403` | Not authorised for this tenant |
+| `500` | Internal server error |
+
+See [API Reference introduction](/api-reference/introduction#error-codes) for the full error envelope format.

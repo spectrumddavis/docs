@@ -1,0 +1,23 @@
+---
+title: 'Batch upsert receipts'
+openapi: 'api-reference/openapi.json PUT /receipts/batch-upsert'
+---
+
+Imports or updates receipts (goods received notes) in bulk using the standard [batch upsert pattern](/api-reference/common-batch-upsert).
+
+**Endpoint:** `PUT /api/receipts/batch-upsert`
+
+---
+
+## Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sourceSystem` | string | Yes | Name of the source system (e.g. `"SAP"`) |
+| `sourceSystemId` | string | Yes | Unique identifier in the source system |
+| `businessUnitId` | string | Yes | ID of the owning business unit |
+| `reference` | string | No | Receipt reference number |
+| `externalReference` | string | No | External or supplier reference |
+| `date` | string (date) | No | Date of the receipt (ISO 8601) |
+| `status` | string | No | Receipt status (e.g. `Received`, `Cancelled`) |
+| `totalNet` | decimal | No | Total net value of the receipt |
